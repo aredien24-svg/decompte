@@ -1,86 +1,76 @@
 const express = require('express');
+const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Configuration de la connexion à la base de données PostgreSQL
-const client = new Client({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
+// Création et connexion à la base de données SQLite (un simple fichier)
+const db = new sqlite3.Database('repas.db', (err) => {
+    if (err) {
+        console.error(err.message);
     }
+    console.log('Connecté à la base de données SQLite des repas.');
 });
 
-// Connexion à la base de données
-client.connect()
-    .then(() => {
-        console.log('Connecté à la base de données PostgreSQL !');
-        // Créer la table des repas
-        return client.query(`
-            CREATE TABLE IF NOT EXISTS meals (
-                id SERIAL PRIMARY KEY,
-                user_email TEXT,
-                date TEXT,
-                meal_type TEXT,
-                state TEXT,
-                UNIQUE(user_email, date, meal_type)
-            )
-        `);
-    })
-    .then(() => {
-        console.log('Table des repas créée ou déjà existante.');
-    })
-    .catch(err => {
-        console.error('Erreur de connexion à la base de données :', err.stack);
-    });
+// Créer la table des repas si elle n'existe pas
+db.run(`CREATE TABLE IF NOT EXISTS meals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_email TEXT,
+    date TEXT,
+    meal_type TEXT,
+    state TEXT,
+    UNIQUE(user_email, date, meal_type)
+)`, (err) => {
+    if (err) {
+        console.error(err.message);
+    }
+    console.log('Table des repas créée ou déjà existante.');
+});
 
 // Permettre au serveur de lire le format JSON
 app.use(express.json());
 
 // Servir les fichiers statiques (ton HTML/CSS/JS) depuis le dossier parent
+// C'est pour que tes pages accueil.html, index.html, etc. soient accessibles
 app.use(express.static(path.join(__dirname, '..')));
 
 // Endpoint pour sauvegarder les repas
 app.post('/api/save-meal', (req, res) => {
     const { user_email, date, meal_type, state } = req.body;
-    const query = `
-        INSERT INTO meals (user_email, date, meal_type, state) 
-        VALUES ($1, $2, $3, $4)
+    const sql = `
+        INSERT INTO meals (user_email, date, meal_type, state) VALUES (?, ?, ?, ?)
         ON CONFLICT(user_email, date, meal_type) DO UPDATE SET state = excluded.state
     `;
-    client.query(query, [user_email, date, meal_type, state])
-        .then(() => {
-            res.json({ message: 'Repas sauvegardé !' });
-        })
-        .catch(err => {
+    db.run(sql, [user_email, date, meal_type, state], function(err) {
+        if (err) {
             console.error(err.message);
-            res.status(500).json({ error: err.message });
-        });
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ message: 'Repas sauvegardé !' });
+    });
 });
 
 // Endpoint pour récupérer les repas d'un utilisateur
 app.get('/api/get-meals', (req, res) => {
     const { user_email } = req.query;
-    client.query('SELECT date, meal_type, state FROM meals WHERE user_email = $1', [user_email])
-        .then(result => {
-            res.json(result.rows);
-        })
-        .catch(err => {
+    db.all(`SELECT date, meal_type, state FROM meals WHERE user_email = ?`, [user_email], (err, rows) => {
+        if (err) {
             console.error(err.message);
-            res.status(500).json({ error: err.message });
-        });
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(rows);
+    });
 });
 
 // Endpoint pour récupérer toutes les données pour l'administrateur
 app.get('/api/get-all-meals', (req, res) => {
-    client.query('SELECT user_email, date, meal_type, state FROM meals')
-        .then(result => {
-            res.json(result.rows);
-        })
-        .catch(err => {
+    db.all(`SELECT user_email, date, meal_type, state FROM meals`, [], (err, rows) => {
+        if (err) {
             console.error(err.message);
-            res.status(500).json({ error: err.message });
-        });
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(rows);
+    });
 });
 
 // Lancer le serveur
