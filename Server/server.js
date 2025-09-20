@@ -47,7 +47,6 @@ app.use(express.static(path.join(__dirname, '..')));
 
 // --- API ---
 
-// Créer un utilisateur
 app.post('/api/create-user', async (req, res) => {
     const { email, firstname, lastname, job, room_number } = req.body;
     const query = 'INSERT INTO users (email, firstname, lastname, job, room_number) VALUES ($1, $2, $3, $4, $5) RETURNING id';
@@ -64,7 +63,6 @@ app.post('/api/create-user', async (req, res) => {
     }
 });
 
-// Toutes les autres routes...
 app.post('/api/login', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM users WHERE email = $1', [req.body.email]);
@@ -102,6 +100,5 @@ app.get('/api/get-all-meals', async (req, res) => {
         res.json(result.rows);
     } catch (err) { res.status(500).json({ error: 'Erreur serveur.' }); }
 });
-
 
 app.listen(port, () => console.log(`Serveur démarré sur le port ${port}`));

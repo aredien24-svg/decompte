@@ -1,5 +1,5 @@
 {
-  "name": "mon-application-repas",
+  "name": "application-repas",
   "version": "1.0.0",
   "description": "Serveur pour l'application de gestion de repas.",
   "main": "Server/server.js",
