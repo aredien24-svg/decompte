@@ -1,39 +1,22 @@
 const express = require('express');
-const { Client } = require('pg'); // On utilise le pilote PostgreSQL
+const { Client } = require('pg');
 const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Connexion à la base de données externe (Supabase) via l'URL d'environnement
 const client = new Client({
     connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
-    }
+    ssl: { rejectUnauthorized: false }
 });
 
-// Fonction pour connecter et préparer les tables
 async function initializeDatabase() {
     try {
         await client.connect();
         console.log('Connecté à la base de données PostgreSQL (Supabase) !');
-
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, firstname TEXT NOT NULL,
-                lastname TEXT NOT NULL, job TEXT, room_number TEXT
-            );
-        `);
+        await client.query(`CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, firstname TEXT NOT NULL, lastname TEXT NOT NULL, job TEXT, room_number TEXT);`);
         console.log("Table 'users' prête.");
-
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS meals (
-                id SERIAL PRIMARY KEY, user_email TEXT, date TEXT,
-                meal_type TEXT, state TEXT, UNIQUE(user_email, date, meal_type)
-            );
-        `);
+        await client.query(`CREATE TABLE IF NOT EXISTS meals (id SERIAL PRIMARY KEY, user_email TEXT, date TEXT, meal_type TEXT, state TEXT, UNIQUE(user_email, date, meal_type));`);
         console.log("Table 'meals' prête.");
-
     } catch (err) {
         console.error('Erreur d\'initialisation de la base de données :', err.stack);
     }
@@ -41,9 +24,10 @@ async function initializeDatabase() {
 initializeDatabase();
 
 app.use(express.json());
+// Cette ligne est cruciale pour que le serveur trouve index.html, accueil.html, etc.
 app.use(express.static(path.join(__dirname, '..')));
 
-// --- Toutes les routes de l'API (version PostgreSQL) ---
+// --- API ---
 app.post('/api/login', async (req, res) => {
     try {
         const result = await client.query('SELECT * FROM users WHERE email = $1', [req.body.email]);
@@ -51,7 +35,7 @@ app.post('/api/login', async (req, res) => {
         else res.status(404).json({ error: 'Email non reconnu.' });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
-
+// ... (toutes les autres routes API que nous avons écrites) ...
 app.post('/api/create-user', async (req, res) => {
     const { email, firstname, lastname, job, room_number } = req.body;
     try {
@@ -62,14 +46,12 @@ app.post('/api/create-user', async (req, res) => {
         else res.status(500).json({ error: err.message });
     }
 });
-
 app.get('/api/get-users', async (req, res) => {
     try {
         const result = await client.query('SELECT * FROM users ORDER BY lastname, firstname');
         res.json(result.rows);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
-
 app.post('/api/save-meal', async (req, res) => {
     const { user_email, date, meal_type, state } = req.body;
     const query = `INSERT INTO meals (user_email, date, meal_type, state) VALUES ($1, $2, $3, $4) ON CONFLICT(user_email, date, meal_type) DO UPDATE SET state = excluded.state`;
@@ -78,14 +60,12 @@ app.post('/api/save-meal', async (req, res) => {
         res.json({ message: 'Repas sauvegardé !' });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
-
 app.get('/api/get-meals', async (req, res) => {
     try {
         const result = await client.query('SELECT date, meal_type, state FROM meals WHERE user_email = $1', [req.query.user_email]);
         res.json(result.rows);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
-
 app.get('/api/get-all-meals', async (req, res) => {
     try {
         const result = await client.query('SELECT user_email, date, meal_type, state FROM meals');

@@ -2,7 +2,7 @@
   "name": "mon-application-repas",
   "version": "1.0.0",
   "description": "Serveur pour l'application de gestion de repas.",
-  "main": "server.js",
+  "main": "Server/server.js",
   "scripts": {
     "start": "node Server/server.js"
   },
