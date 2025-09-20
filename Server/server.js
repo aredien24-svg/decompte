@@ -101,7 +101,27 @@ app.get('/api/get-users', (req, res) => {
         res.json(rows);
     });
 });
-
+// NOUVEAU : Endpoint pour vérifier la connexion d'un utilisateur
+app.post('/api/login', (req, res) => {
+    const { email } = req.body;
+    if (!email) {
+        return res.status(400).json({ error: "L'email est requis." });
+    }
+    const sql = `SELECT * FROM users WHERE email = ?`;
+    db.get(sql, [email], (err, user) => {
+        if (err) {
+            console.error(err.message);
+            return res.status(500).json({ error: err.message });
+        }
+        if (user) {
+            // L'utilisateur existe, on confirme la connexion
+            res.status(200).json({ message: 'Connexion réussie', user });
+        } else {
+            // L'utilisateur n'existe pas dans la base de données
+            res.status(404).json({ error: 'Email non reconnu.' });
+        }
+    });
+});
 
 // Lancer le serveur
 app.listen(port, () => {
