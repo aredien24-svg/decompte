@@ -1,4 +1,13 @@
 {
+  "name": "mon-application-repas",
+  "version": "1.0.0",
+  "description": "Serveur pour l'application de gestion de repas",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "",
+  "license": "ISC",
   "dependencies": {
     "express": "^5.1.0",
     "sqlite3": "^5.1.7"
