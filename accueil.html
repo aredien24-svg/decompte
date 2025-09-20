@@ -1,219 +1,205 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-<title>Accueil - Gestion des repas</title>
-<style>
-  body {
-    font-family: sans-serif;
-    text-align: center;
-    background-color: #f0f8ff; /* Bleu très clair */
-    color: #333;
-  }
-  table {
-    width: 80%;
-    margin: 20px auto;
-    border-collapse: collapse;
-    table-layout: fixed;
-    background-color: #ffffff;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
-  th, td {
-    border: 1px solid #ccc;
-    padding: 5px;
-    text-align: center;
-    vertical-align: top;
-    height: 75px;
-    font-size: 0.9em;
-  }
-  th {
-    background-color: #3498db; /* Bleu */
-    color: white;
-    font-weight: bold;
-  }
-  td.empty {
-    background-color: #f9f9f9;
-    cursor: default;
-  }
-  .day-content {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    justify-content: flex-start;
-    align-items: center;
-  }
-  .meal-slot {
-    display: block;
-    width: 80%;
-    padding: 2px;
-    margin-top: 5px;
-    cursor: pointer;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-weight: bold;
-    transition: background-color 0.2s, color 0.2s;
-  }
-  .meal-slot:hover {
-    background-color: #ffd79c;
-  }
-  .meal-slot.one { background-color: #d4edda; color: #155724; }
-  .meal-slot.zero { background-color: #f8d7da; color: #721c24; }
-  .meal-slot.stage { background-color: #fff3cd; color: #856404; }
-  .meal-slot.vacances { background-color: #cce5ff; color: #004085; }
-  .locked-calendar .meal-slot {
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
-  .locked-calendar .meal-slot:hover {
-    background-color: #e6e6e6;
-  }
-  h1, h2 {
-    color: #e67e22;
-  }
-  #meal-counter {
-    font-size: 1.2em;
-    font-weight: bold;
-    margin: 20px auto;
-    text-align: center;
-    width: 80%;
-    color: #2c3e50;
-  }
-  .nav-buttons {
-    margin: 10px 0;
-  }
-  .nav-buttons button {
-    padding: 5px 10px;
-    font-size: 1em;
-    cursor: pointer;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Calendrier de Repas</title>
+    <style>
+        :root {
+            --primary-color: #0056a8; /* Bleu du logo */
+            --secondary-color: #f39c12; /* Orange du logo */
+            --light-gray: #f4f4f4;
+            --dark-gray: #555;
+            --background-color: #eef2f5;
+            --white: #ffffff;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--dark-gray);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            background-color: var(--white);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            padding: 20px 30px;
+            background-color: var(--primary-color);
+            color: var(--white);
+        }
+
+        header img {
+            height: 50px;
+            margin-right: 20px;
+        }
+        
+        .header-title {
+            margin: 0;
+            font-size: 1.5em;
+            font-weight: 600;
+        }
+
+        main {
+            padding: 30px;
+        }
+
+        .calendar-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        #month-year {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .nav-btn {
+            background-color: var(--secondary-color);
+            color: var(--white);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s;
+        }
+        .nav-btn:hover {
+            background-color: #e67e22;
+        }
+
+        #calendar {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        #calendar th {
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--light-gray);
+        }
+
+        #calendar td {
+            border: 1px solid #ddd;
+            vertical-align: top;
+            height: 150px;
+            padding: 8px;
+        }
+        
+        .day-number {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .meals {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .meal-item {
+            font-weight: 500;
+        }
+
+        .meal-choices {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+        }
+
+        .choice-btn {
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            padding: 5px;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .choice-btn:hover {
+            background-color: #e0e0e0;
+        }
+        .choice-btn.active {
+            background-color: var(--secondary-color);
+            color: var(--white);
+            border-color: var(--secondary-color);
+        }
+        
+        .choice-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #eee;
+        }
+        
+        .day-locked {
+            background-color: #f9f9f9;
+            color: #aaa;
+        }
+        .day-locked .choice-btn {
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+    </style>
 </head>
 <body>
 
-<h1>Bienvenue sur Gestion des repas !</h1>
-<p>C'est ici que tu vas gérer tes repas et tes courses.</p>
+<div class="container">
+    <header>
+        <img src="logo.png" alt="Logo">
+        <h1 class="header-title">Mon Calendrier de Repas</h1>
+    </header>
 
----
+    <main>
+        <div class="calendar-controls">
+            <button id="prev-month" class="nav-btn">&lt; Mois Précédent</button>
+            <h2 id="month-year">Chargement...</h2>
+            <button id="next-month" class="nav-btn">Mois Suivant &gt;</button>
+        </div>
 
-<div class="nav-buttons">
-    <button id="prev-month"> &lt; </button>
-    <h2 style="display:inline-block; margin: 0 20px;"></h2>
-    <button id="next-month"> &gt; </button>
+        <table id="calendar">
+            <thead>
+                <tr>
+                    <th>Dimanche</th>
+                    <th>Lundi</th>
+                    <th>Mardi</th>
+                    <th>Mercredi</th>
+                    <th>Jeudi</th>
+                    <th>Vendredi</th>
+                    <th>Samedi</th>
+                </tr>
+            </thead>
+            <tbody id="calendar-body">
+                </tbody>
+        </table>
+    </main>
 </div>
 
-<p>Clique sur 'Midi' ou 'Soir' pour indiquer la présence ou l'absence d'un repas.</p>
-<div id="meal-counter">Total des repas ce mois-ci : <span>0</span></div>
-
-<div id="calendar-container">
-    </div>
-
 <script>
-    const calendarContainer = document.getElementById('calendar-container');
-    const mealCounterSpan = document.querySelector('#meal-counter span');
-    const currentUserEmail = localStorage.getItem('currentUserEmail');
-    const prevMonthBtn = document.getElementById('prev-month');
-    const nextMonthBtn = document.getElementById('next-month');
+    // Pour l'instant, cette section est vide. On la remplira à la prochaine étape.
+</script>
 
-    const mealStates = ['1', '0', 'S', 'V'];
-    const mealStateClasses = {
-        '1': 'one', '0': 'zero', 'S': 'stage', 'V': 'vacances'
-    };
-
-    function updateMealCounter() {
-        let count = 0;
-        document.querySelectorAll('.meal-slot').forEach(slot => {
-            if (slot.dataset.state === '1') {
-                count++;
-            }
-        });
-        mealCounterSpan.textContent = count;
-    }
-
-    async function saveMealState(date, type, state) {
-        await fetch('https://decompte.onrender.com/api/save-meal', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                user_email: currentUserEmail,
-                date: date,
-                meal_type: type,
-                state: state
-            }),
-        });
-    }
-
-    async function getSavedMeals() {
-        const response = await fetch(`https://decompte.onrender.com/api/get-meals?user_email=${currentUserEmail}`);
-        const data = await response.json();
-        const meals = {};
-        data.forEach(item => {
-            if (!meals[item.date]) {
-                meals[item.date] = {};
-            }
-            meals[item.date][item.meal_type] = item.state;
-        });
-        return meals;
-    }
-
-    async function toggleMealState(event) {
-        const slot = event.target;
-        if (calendarContainer.classList.contains('locked-calendar')) {
-            return;
-        }
-
-        const date = slot.parentElement.parentElement.dataset.date;
-        const mealType = slot.textContent.split(':')[0];
-
-        const currentState = slot.dataset.state || '0';
-        const currentIndex = mealStates.indexOf(currentState);
-        const nextIndex = (currentIndex + 1) % mealStates.length;
-        const nextState = mealStates[nextIndex];
-
-        slot.textContent = mealType + ': ' + nextState;
-        slot.dataset.state = nextState;
-
-        Object.values(mealStateClasses).forEach(c => slot.classList.remove(c));
-        slot.classList.add(mealStateClasses[nextState]);
-
-        await saveMealState(date, mealType, nextState);
-        updateMealCounter();
-    }
-
-    async function createCalendar(year, month) {
-        calendarContainer.innerHTML = '';
-        const today = new Date();
-        const firstDayOfMonth = new Date(year, month, 1);
-        const lastDayOfMonth = new Date(year, month + 1, 0);
-        const daysInMonth = lastDayOfMonth.getDate();
-        
-        const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
-        const isPastCutoff = isCurrentMonth && today.getDate() > 15;
-
-        if (isPastCutoff) {
-            calendarContainer.classList.add('locked-calendar');
-        } else {
-            calendarContainer.classList.remove('locked-calendar');
-        }
-
-        const savedMeals = await getSavedMeals();
-
-        const calendarTable = document.createElement('table');
-        calendarTable.innerHTML = '<thead><tr><th>Lun</th><th>Mar</th><th>Mer</th><th>Jeu</th><th>Ven</th><th>Sam</th><th>Dim</th></tr></thead><tbody></tbody>';
-        const calendarBody = calendarTable.querySelector('tbody');
-
-        let date = 1;
-        let dayOfWeek = firstDayOfMonth.getDay() === 0 ? 6 : firstDayOfMonth.getDay() - 1;
-
-        for (let i = 0; i < 6; i++) {
-            const row = document.createElement('tr');
-            for (let j = 0; j < 7; j++) {
-                const cell = document.createElement('td');
-                if (i === 0 && j < dayOfWeek) {
-                    cell.classList.add('empty');
-                } else if (date > daysInMonth) {
-                    cell.classList.add('empty');
-                } else {
-                    const day = date;
-                    const fullDate = `${year}-${month + 1}-${day}`;
-                    cell.dataset.date = full
+</body>
+</html>
