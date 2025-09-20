@@ -9,7 +9,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^5.1.0",
-    "sqlite3": "^5.1.7"
+  "express": "^5.1.0",
+  "pg": "^8.11.3",
+  "sqlite3": "^5.1.7"
+},
   }
 }
