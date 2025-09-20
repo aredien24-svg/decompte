@@ -1,5 +1,4 @@
 const express = require('express');
-const { Client } = require('pg');
 const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
