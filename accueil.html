@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Accueil - Gestion des repas</title>
+<style>
+  body {
+    font-family: sans-serif;
+    text-align: center;
+    background-color: #f0f8ff; /* Bleu très clair */
+    color: #333;
+  }
+  table {
+      width: 80%;
+      margin: 20px auto;
+      border-collapse: collapse;
+      table-layout: fixed;
+      background-color: #ffffff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  th, td {
+      border: 1px solid #ccc;
+      padding: 5px;
+      text-align: center;
+      vertical-align: top;
+      height: 75px;
+      font-size: 0.9em;
+  }
+  th {
+      background-color: #3498db; /* Bleu */
+      color: white;
+      font-weight: bold;
+  }
+  td.empty {
+      background-color: #f9f9f9;
+      cursor: default;
+  }
+  .day-content {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      justify-content: flex-start;
+      align-items: center;
+  }
+  .meal-slot {
+      display: block;
+      width: 80%;
+      padding: 2px;
+      margin-top: 5px;
+      cursor: pointer;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-weight: bold;
+      transition: background-color 0.2s, color 0.2s;
+  }
+  .meal-slot:hover {
+      background-color: #ffd79c;
+  }
+  .meal-slot.one { background-color: #d4edda; color: #155724; }
+  .meal-slot.zero { background-color: #f8d7da; color: #721c24; }
+  .meal-slot.stage { background-color: #fff3cd; color: #856404; }
+  .meal-slot.vacances { background-color: #cce5ff; color: #004085; }
+  .locked-calendar .meal-slot {
+      cursor: not-allowed;
+      opacity: 0.6;
+  }
+  .locked-calendar .meal-slot:hover {
+      background-color: #e6e6e6;
+  }
+  h1, h2 {
+      color: #e67e22;
+  }
+  #meal-counter {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin: 20px auto;
+      text-align: center;
+      width: 80%;
+      color: #2c3e50;
+  }
+  .nav-buttons {
+      margin: 10px 0;
+  }
+  .nav-buttons button {
+      padding: 5px 10px;
+      font-size: 1em;
+      cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<h1>Bienvenue sur Gestion des repas !</h1>
+<p>C'est ici que tu vas gérer tes repas et tes courses.</p>
+
+---
+
+<div class="nav-buttons">
+    <button id="prev-month"> &lt; </button>
+    <h2 style="display:inline-block; margin: 0 20px;"></h2>
+    <button id="next-month"> &gt; </button>
+</div>
+
+<p>Clique sur 'Midi' ou 'Soir' pour indiquer la présence ou l'absence d'un repas.</p>
+<div id="meal-counter">Total des repas ce mois-ci : <span>0</span></div>
+
+<div id="calendar-container">
+    </div>
+
+<script>
+    const calendarContainer = document.getElementById('calendar-container');
+    const mealCounterSpan = document.querySelector('#meal-counter span');
+    const currentUserEmail = localStorage.getItem('currentUserEmail');
+    const prevMonthBtn = document.getElementById('prev-month');
+    const nextMonthBtn = document.getElementById('next-month');
+
+    const mealStates = ['1', '0', 'S', 'V'];
+    const mealStateClasses = {
+        '1': 'one', '0': 'zero', 'S': 'stage', 'V': 'vacances'
+    };
+
+    function updateMealCounter() {
+        let count = 0;
+        document.querySelectorAll('.meal-slot').forEach(slot => {
+            if (slot.dataset.state === '1') {
+                count++;
+            }
+        });
+        mealCounterSpan.textContent = count;
+    }
+
+    async function saveMealState(date, type, state) {
+        await fetch('http://localhost:3000/api/save-meal', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                user_email: currentUserEmail,
+                date: date,
+                meal_type: type,
+                state: state
+            }),
+        });
+    }
+
+    async function getSavedMeals() {
+        const response = await fetch(`http://localhost:3000/api/get-meals?user_email=${currentUserEmail}`);
+        const data = await response.json();
+        const meals = {};
+        data.forEach(item => {
+            if (!meals[item.date]) {
+                meals[item.date] = {};
+            }
+            meals[item.date][item.meal_type] = item.state;
+        });
+        return meals;
+    }
+
+    async function toggleMealState(event) {
+        const slot = event.target;
+        if (calendarContainer.classList.contains('locked-calendar')) {
+            return;
+        }
+
+        const date = slot.parentElement.parentElement.dataset.date;
+        const mealType = slot.textContent.split(':')[0];
+
+        const currentState = slot.dataset.state || '0';
+        const currentIndex = mealStates.indexOf(currentState);
+        const nextIndex = (currentIndex + 1) % mealStates.length;
+        const nextState = mealStates[nextIndex];
+
+        slot.textContent = mealType + ': ' + nextState;
+        slot.dataset.state = nextState;
+
+        Object.values(mealStateClasses).forEach(c => slot.classList.remove(c));
+        slot.classList.add(mealStateClasses[nextState]);
+
+        await saveMealState(date, mealType, nextState);
+        updateMealCounter();
+    }
+
+    async function createCalendar(year, month) {
+        calendarContainer.innerHTML = '';
+        const today = new Date();
+        const firstDayOfMonth = new Date(year, month, 1);
+        const lastDayOfMonth = new Date(year, month + 1, 0);
+        const daysInMonth = lastDayOfMonth.getDate();
+        
+        const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+        const isPastCutoff = isCurrentMonth && today.getDate() > 15;
+
+        if (isPastCutoff) {
+            calendarContainer.classList.add('locked-calendar');
+        } else {
+            calendarContainer.classList.remove('locked-calendar');
+        }
+
+        const savedMeals = await getSavedMeals();
+
+        const calendarTable = document.createElement('table');
+        calendarTable.innerHTML = '<thead><tr><th>Lun</th><th>Mar</th><th>Mer</th><th>Jeu</th><th>Ven</th><th>Sam</th><th>Dim</th></tr></thead><tbody></tbody>';
+        const calendarBody = calendarTable.querySelector('tbody');
+
+        let date = 1;
+        let dayOfWeek = firstDayOfMonth.getDay() === 0 ? 6 : firstDayOfMonth.getDay() - 1;
+
+        for (let i = 0; i < 6; i++) {
+            const row = document.createElement('tr');
+            for (let j = 0; j < 7; j++) {
+                const cell = document.createElement('td');
+                if (i === 0 && j < dayOfWeek) {
+                    cell.classList.add('empty');
+                } else if (date > daysInMonth) {
+                    cell.classList.add('empty');
+                } else {
+                    const day = date;
+                    const fullDate = `${year}-${month + 1}-${day}`;
+                    cell.dataset.date = fullDate;
+
+                    const savedDayMeals = savedMeals[fullDate] || { "Midi": "0", "Soir": "0" };
+                    
+                    const cellContent = `
+                        <strong>${day}</strong>
+                        <div class="day-content">
+                            <span class="meal-slot ${mealStateClasses[savedDayMeals["Midi"]]}" data-state="${savedDayMeals["Midi"]}">Midi: ${savedDayMeals["Midi"]}</span>
+                            <span class="meal-slot ${mealStateClasses[savedDayMeals["Soir"]]}" data-state="${savedDayMeals["Soir"]}">Soir: ${savedDayMeals["Soir"]}</span>
+                        </div>
+                    `;
+                    cell.innerHTML = cellContent;
+
+                    const mealSlots = cell.querySelectorAll('.meal-slot');
+                    mealSlots.forEach(slot => {
+                        slot.addEventListener('click', toggleMealState);
+                    });
+
+                    date++;
+                }
+                row.appendChild(cell);
+            }
+            calendarBody.appendChild(row);
+            if (date > daysInMonth) break;
+        }
+
+        calendarContainer.appendChild(calendarTable);
+        updateMealCounter();
+    }
+
+    // Ajout d'une variable globale pour le mois et l'année
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth();
+
+    function updateTitle() {
+      const monthNames = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+      document.querySelector('h2').textContent = `${monthNames[currentMonth]} ${currentYear}`;
+    }
+
+    prevMonthBtn.addEventListener('click', () => {
+        currentMonth--;
+        if (currentMonth < 0) {
+            currentMonth = 11;
+            currentYear--;
+        }
+        updateTitle();
+        createCalendar(currentYear, currentMonth);
+    });
+
+    nextMonthBtn.addEventListener('click', () => {
+        currentMonth++;
+        if (currentMonth > 11) {
+            currentMonth = 0;
+            currentYear++;
+        }
+        updateTitle();
+        createCalendar(currentYear, currentMonth);
+    });
+
+    updateTitle();
+    createCalendar(currentYear, currentMonth);
+</script>
+
+</body>
+</html>
