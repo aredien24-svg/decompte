@@ -198,7 +198,181 @@
 </div>
 
 <script>
-    // Pour l'instant, cette section est vide. On la remplira à la prochaine étape.
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- ÉLÉMENTS DU DOM ---
+        const calendarBody = document.getElementById('calendar-body');
+        const monthYearEl = document.getElementById('month-year');
+        const prevMonthBtn = document.getElementById('prev-month');
+        const nextMonthBtn = document.getElementById('next-month');
+        
+        // --- GESTION DE L'ÉTAT ---
+        const userEmail = localStorage.getItem('userEmail');
+        if (!userEmail) {
+            window.location.href = 'index.html'; // Redirige si non connecté
+            return;
+        }
+        let currentDate = new Date(); // Date pour la navigation dans le calendrier
+        let today = new Date(); // Date actuelle, ne change pas
+        today.setHours(0, 0, 0, 0); // Normalise à minuit pour les comparaisons
+
+        // --- FONCTIONS PRINCIPALES ---
+
+        /**
+         * Génère et affiche le calendrier pour un mois et une année donnés.
+         * @param {number} year - L'année à afficher.
+         * @param {number} month - Le mois à afficher (0 = Janvier).
+         * @param {Array} mealsData - Les données de repas récupérées du serveur.
+         */
+        function generateCalendar(year, month, mealsData = []) {
+            calendarBody.innerHTML = '';
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            
+            monthYearEl.textContent = firstDay.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+
+            // Règle du 20 du mois
+            const isNextMonthLocked = (today.getDate() >= 20) && 
+                                      (new Date(year, month, 1).getMonth() === (today.getMonth() + 1) % 12);
+
+            let date = 1;
+            for (let i = 0; i < 6; i++) { // Pour 6 semaines max
+                const row = document.createElement('tr');
+                for (let j = 0; j < 7; j++) { // Pour 7 jours de la semaine
+                    if ((i === 0 && j < firstDay.getDay()) || date > lastDay.getDate()) {
+                        row.appendChild(document.createElement('td'));
+                    } else {
+                        const cell = document.createElement('td');
+                        const dayDate = new Date(year, month, date);
+                        dayDate.setHours(0, 0, 0, 0);
+                        const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+
+                        const isPast = dayDate < today;
+                        const isLocked = isPast || (isNextMonthLocked && dayDate > lastDay);
+                        
+                        if (isLocked) {
+                            cell.classList.add('day-locked');
+                        }
+
+                        // Récupère les données pour ce jour
+                        const mealMidi = mealsData.find(m => m.date === dateString && m.meal_type === 'midi') || { state: '' };
+                        const mealSoir = mealsData.find(m => m.date === dateString && m.meal_type === 'soir') || { state: '' };
+
+                        cell.innerHTML = `
+                            <div class="day-number">${date}</div>
+                            <div class="meals">
+                                <div class="meal-item">
+                                    Midi
+                                    <div class="meal-choices" data-date="${dateString}" data-meal="midi">
+                                        <button class="choice-btn ${mealMidi.state === 'present' ? 'active' : ''}" data-state="present">1</button>
+                                        <button class="choice-btn ${mealMidi.state === 'absent' ? 'active' : ''}" data-state="absent">0</button>
+                                        <button class="choice-btn ${mealMidi.state === 'stage' ? 'active' : ''}" data-state="stage">S</button>
+                                        <button class="choice-btn ${mealMidi.state === 'vacances' ? 'active' : ''}" data-state="vacances">V</button>
+                                    </div>
+                                </div>
+                                <div class="meal-item">
+                                    Soir
+                                    <div class="meal-choices" data-date="${dateString}" data-meal="soir">
+                                        <button class="choice-btn ${mealSoir.state === 'present' ? 'active' : ''}" data-state="present">1</button>
+                                        <button class="choice-btn ${mealSoir.state === 'absent' ? 'active' : ''}" data-state="absent">0</button>
+                                        <button class="choice-btn ${mealSoir.state === 'stage' ? 'active' : ''}" data-state="stage">S</button>
+                                        <button class="choice-btn ${mealSoir.state === 'vacances' ? 'active' : ''}" data-state="vacances">V</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        row.appendChild(cell);
+                        date++;
+                    }
+                }
+                calendarBody.appendChild(row);
+                if (date > lastDay.getDate()) break;
+            }
+            addEventListenersToChoices();
+        }
+
+        /**
+         * Ajoute les écouteurs d'événements à tous les boutons de choix.
+         */
+        function addEventListenersToChoices() {
+            document.querySelectorAll('.meal-choices').forEach(group => {
+                const buttons = group.querySelectorAll('.choice-btn');
+                buttons.forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const target = e.currentTarget;
+                        const parent = target.parentElement;
+                        
+                        // Empêche le clic si le jour est verrouillé
+                        if (target.closest('.day-locked')) return;
+
+                        const currentState = target.dataset.state;
+                        const isActive = target.classList.contains('active');
+                        
+                        // Désélectionne tous les boutons du groupe
+                        parent.querySelectorAll('.choice-btn').forEach(btn => btn.classList.remove('active'));
+
+                        // Si le bouton n'était pas actif, on le sélectionne
+                        if (!isActive) {
+                            target.classList.add('active');
+                        }
+                        
+                        const newState = isActive ? '' : currentState; // Si on reclique, on désélectionne (état vide)
+
+                        await saveMealState(parent.dataset.date, parent.dataset.meal, newState);
+                    });
+                });
+            });
+        }
+
+        // --- COMMUNICATIONS AVEC LE SERVEUR ---
+
+        /**
+         * Sauvegarde l'état d'un repas sur le serveur.
+         */
+        async function saveMealState(date, mealType, state) {
+            try {
+                const response = await fetch('/api/save-meal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_email: userEmail, date, meal_type: mealType, state }),
+                });
+                if (!response.ok) throw new Error('Erreur de sauvegarde');
+                console.log(`Repas sauvegardé: ${date}, ${mealType}, ${state || 'vide'}`);
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('La sauvegarde a échoué. Veuillez réessayer.');
+            }
+        }
+
+        /**
+         * Charge les données de repas de l'utilisateur et génère le calendrier.
+         */
+        async function loadUserMealsAndGenerateCalendar() {
+            try {
+                monthYearEl.textContent = 'Chargement...';
+                const response = await fetch(`/api/get-meals?user_email=${userEmail}`);
+                const meals = await response.json();
+                generateCalendar(currentDate.getFullYear(), currentDate.getMonth(), meals);
+            } catch (error) {
+                console.error('Erreur de chargement:', error);
+                monthYearEl.textContent = 'Erreur';
+            }
+        }
+        
+        // --- ÉVÉNEMENTS DE NAVIGATION ---
+
+        prevMonthBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            loadUserMealsAndGenerateCalendar();
+        });
+
+        nextMonthBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            loadUserMealsAndGenerateCalendar();
+        });
+        
+        // --- INITIALISATION ---
+        loadUserMealsAndGenerateCalendar();
+    });
 </script>
 
 </body>
