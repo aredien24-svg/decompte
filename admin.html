@@ -3,63 +3,78 @@
 <head>
 <title>Admin - Tableau de bord</title>
 <style>
-  body {
-    font-family: sans-serif;
-    text-align: center;
-    background-color: #f0f8ff;
-    color: #333;
-  }
-  h1 {
-    color: #e67e22;
-  }
-  table {
-    width: 90%;
-    margin: 20px auto;
-    border-collapse: collapse;
-    background-color: #ffffff;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
-  th, td {
-    border: 1px solid #ccc;
-    padding: 10px;
-    text-align: left;
-  }
-  th {
-    background-color: #3498db;
-    color: white;
-  }
-  tr:nth-child(even) {
-    background-color: #f2f2f2;
-  }
-  .meal-count {
-    font-weight: bold;
-    color: #2980b9;
-  }
-  .table-section {
-    margin-top: 50px;
-  }
-  .export-button {
-    padding: 10px 20px;
-    background-color: #2ecc71;
-    color: white;
-    border: none;
-    cursor: pointer;
-    font-size: 1em;
-    border-radius: 5px;
-    margin-bottom: 20px;
-  }
-  .export-button:hover {
-    background-color: #27ae60;
-  }
+  body { font-family: sans-serif; text-align: center; background-color: #f0f8ff; color: #333; }
+  h1 { color: #e67e22; }
+  h2 { color: #3498db; margin-top: 40px; }
+  table { width: 90%; margin: 20px auto; border-collapse: collapse; background-color: #ffffff; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+  th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+  th { background-color: #3498db; color: white; }
+  tr:nth-child(even) { background-color: #f2f2f2; }
+  .meal-count { font-weight: bold; color: #2980b9; }
+  .export-button { padding: 10px 20px; background-color: #2ecc71; color: white; border: none; cursor: pointer; font-size: 1em; border-radius: 5px; margin-bottom: 20px; }
+  .export-button:hover { background-color: #27ae60; }
+  
+  /* Nouveaux styles pour le formulaire */
+  .admin-section { margin-top: 50px; padding: 20px; background-color: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 90%; margin-left: auto; margin-right: auto; border-radius: 8px; }
+  .user-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; text-align: left; }
+  .form-group { display: flex; flex-direction: column; }
+  .form-group label { margin-bottom: 5px; font-weight: bold; }
+  .form-group input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+  .submit-button { background-color: #3498db; color: white; padding: 12px; border: none; cursor: pointer; border-radius: 5px; font-size: 1em; grid-column: 1 / -1; } /* S'étend sur toute la largeur */
+  .submit-button:hover { background-color: #2980b9; }
 </style>
 </head>
 <body>
 
 <h1>Tableau de bord Administrateur</h1>
-<p>Suivi des repas par jour et par utilisateur.</p>
+<p>Suivi des repas et gestion des utilisateurs.</p>
 
-<div class="table-section">
-  <h2>Récapitulatif par jour</h2>
+<div class="admin-section">
+  <h2>Gestion des Utilisateurs</h2>
+  
+  <h3>Ajouter un nouvel utilisateur</h3>
+  <form id="create-user-form" class="user-form">
+    <div class="form-group">
+      <label for="firstname">Prénom *</label>
+      <input type="text" id="firstname" name="firstname" required>
+    </div>
+    <div class="form-group">
+      <label for="lastname">Nom *</label>
+      <input type="text" id="lastname" name="lastname" required>
+    </div>
+    <div class="form-group">
+      <label for="email">Adresse Mail *</label>
+      <input type="email" id="email" name="email" required>
+    </div>
+    <div class="form-group">
+      <label for="job">Métier</label>
+      <input type="text" id="job" name="job">
+    </div>
+    <div class="form-group">
+      <label for="room_number">N° de chambre</label>
+      <input type="text" id="room_number" name="room_number">
+    </div>
+    <button type="submit" class="submit-button">Créer l'utilisateur</button>
+  </form>
+
+  <h3 style="margin-top: 40px;">Liste des utilisateurs enregistrés</h3>
+  <table id="users-list-table">
+    <thead>
+      <tr>
+        <th>Email</th>
+        <th>Prénom</th>
+        <th>Nom</th>
+        <th>Métier</th>
+        <th>N° Chambre</th>
+      </tr>
+    </thead>
+    <tbody id="users-list-tbody">
+      </tbody>
+  </table>
+</div>
+
+<div class="admin-section">
+  <h2>Récapitulatif des repas par jour</h2>
   <button class="export-button" onclick="exportDailyToExcel()">Exporter le récapitulatif journalier</button>
   <table id="daily-table">
     <thead>
@@ -69,13 +84,12 @@
         <th>Soir (Total)</th>
       </tr>
     </thead>
-    <tbody>
-      </tbody>
+    <tbody></tbody>
   </table>
 </div>
 
-<div class="table-section">
-  <h2>Récapitulatif par utilisateur</h2>
+<div class="admin-section">
+  <h2>Récapitulatif des repas par utilisateur</h2>
   <button class="export-button" onclick="exportUserToExcel()">Exporter le récapitulatif par utilisateur</button>
   <table id="user-table">
     <thead>
@@ -85,134 +99,137 @@
         <th>Total repas</th>
       </tr>
     </thead>
-    <tbody>
-      </tbody>
+    <tbody></tbody>
   </table>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
 <script>
-    async function fetchAllMeals() {
-        const response = await fetch('http://localhost:3000/api/get-all-meals');
-        const data = await response.json();
-        return data;
-    }
+    // S'assure que tout le code s'exécute quand la page est chargée
+    document.addEventListener('DOMContentLoaded', () => {
+        // Fonctions pour les repas
+        displayDailyDashboard();
+        displayUserDashboard();
+        
+        // NOUVEAU : Fonctions pour les utilisateurs
+        displayUsersList();
+        
+        const createUserForm = document.getElementById('create-user-form');
+        createUserForm.addEventListener('submit', handleCreateUser);
+    });
 
+    // --- Fonctions pour les REPAS ---
+    async function fetchAllMeals() {
+        const response = await fetch('/api/get-all-meals');
+        return response.ok ? response.json() : [];
+    }
+    // ... (les autres fonctions pour les repas restent ici, inchangées)
     function formatDate(dateString) {
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      const date = new Date(dateString);
+      const date = new Date(dateString + 'T00:00:00');
       return date.toLocaleDateString('fr-FR', options);
     }
-
-    function sortDates(a, b) {
-      return new Date(a) - new Date(b);
-    }
-
+    function sortDates(a, b) { return new Date(a) - new Date(b); }
     async function displayDailyDashboard() {
         const allMeals = await fetchAllMeals();
         const dailyTableBody = document.getElementById('daily-table').querySelector('tbody');
         dailyTableBody.innerHTML = '';
-
         const dailyTotals = {};
         allMeals.forEach(meal => {
             const date = meal.date;
             const mealType = meal.meal_type;
             const state = meal.state;
-
-            if (!dailyTotals[date]) {
-                dailyTotals[date] = { 'Midi': 0, 'Soir': 0 };
-            }
-
-            if (state === '1') {
-                dailyTotals[date][mealType]++;
-            }
+            if (!dailyTotals[date]) { dailyTotals[date] = { 'midi': 0, 'soir': 0 }; }
+            if (state === 'present' && (mealType === 'midi' || mealType === 'soir')) { dailyTotals[date][mealType]++; }
         });
-
         const sortedDates = Object.keys(dailyTotals).sort(sortDates);
-
         sortedDates.forEach(date => {
             const row = document.createElement('tr');
-            
-            const dateCell = document.createElement('td');
-            dateCell.textContent = formatDate(date);
-
-            const midiCell = document.createElement('td');
-            midiCell.textContent = dailyTotals[date]['Midi'];
-
-            const soirCell = document.createElement('td');
-            soirCell.textContent = dailyTotals[date]['Soir'];
-
-            row.appendChild(dateCell);
-            row.appendChild(midiCell);
-            row.appendChild(soirCell);
+            row.innerHTML = `<td>${formatDate(date)}</td><td class="meal-count">${dailyTotals[date]['midi']}</td><td class="meal-count">${dailyTotals[date]['soir']}</td>`;
             dailyTableBody.appendChild(row);
         });
     }
-
     async function displayUserDashboard() {
         const allMeals = await fetchAllMeals();
         const userTableBody = document.getElementById('user-table').querySelector('tbody');
         userTableBody.innerHTML = '';
-
         const userMonthlyTotals = {};
         allMeals.forEach(meal => {
             const user_email = meal.user_email;
-            const mealDate = new Date(meal.date);
-            const monthYear = `${mealDate.getFullYear()}-${mealDate.getMonth() + 1}`;
-
-            if (!userMonthlyTotals[user_email]) {
-                userMonthlyTotals[user_email] = {};
-            }
-            if (!userMonthlyTotals[user_email][monthYear]) {
-                userMonthlyTotals[user_email][monthYear] = 0;
-            }
-
-            if (meal.state === '1') {
-                userMonthlyTotals[user_email][monthYear]++;
-            }
+            const mealDate = new Date(meal.date + 'T00:00:00');
+            const monthYear = `${mealDate.getFullYear()}-${String(mealDate.getMonth() + 1).padStart(2, '0')}`;
+            if (!userMonthlyTotals[user_email]) { userMonthlyTotals[user_email] = {}; }
+            if (!userMonthlyTotals[user_email][monthYear]) { userMonthlyTotals[user_email][monthYear] = 0; }
+            if (meal.state === 'present') { userMonthlyTotals[user_email][monthYear]++; }
         });
-
         for (const email in userMonthlyTotals) {
             for (const monthYear in userMonthlyTotals[email]) {
                 const row = document.createElement('tr');
-                
-                const emailCell = document.createElement('td');
-                emailCell.textContent = email;
-
-                const monthCell = document.createElement('td');
                 const [year, month] = monthYear.split('-');
                 const monthName = new Date(year, month - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-                monthCell.textContent = monthName;
-
-                const totalMealsCell = document.createElement('td');
-                totalMealsCell.textContent = userMonthlyTotals[email][monthYear];
-
-                row.appendChild(emailCell);
-                row.appendChild(monthCell);
-                row.appendChild(totalMealsCell);
+                row.innerHTML = `<td>${email}</td><td>${monthName}</td><td class="meal-count">${userMonthlyTotals[email][monthYear]}</td>`;
                 userTableBody.appendChild(row);
             }
         }
     }
-    
     function exportTableToExcel(tableID, filename = '') {
       const table = document.getElementById(tableID);
       const ws = XLSX.utils.table_to_sheet(table);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-      XLSX.writeFile(wb, `${filename}.xlsx`);
+      XLSX.writeFile(wb, `${filename || 'export'}.xlsx`);
     }
+    function exportDailyToExcel() { exportTableToExcel('daily-table', 'recap_journalier'); }
+    function exportUserToExcel() { exportTableToExcel('user-table', 'recap_utilisateur'); }
 
-    function exportDailyToExcel() {
-      exportTableToExcel('daily-table', 'recap_journalier');
+    // --- NOUVEAU : Fonctions pour les UTILISATEURS ---
+    
+    // Récupère et affiche la liste des utilisateurs
+    async function displayUsersList() {
+        const response = await fetch('/api/get-users');
+        if (!response.ok) return;
+        const users = await response.json();
+        
+        const tbody = document.getElementById('users-list-tbody');
+        tbody.innerHTML = ''; // Vide la liste actuelle
+        
+        users.forEach(user => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${user.email}</td>
+                <td>${user.firstname}</td>
+                <td>${user.lastname}</td>
+                <td>${user.job || ''}</td>
+                <td>${user.room_number || ''}</td>
+            `;
+            tbody.appendChild(row);
+        });
     }
-
-    function exportUserToExcel() {
-      exportTableToExcel('user-table', 'recap_utilisateur');
+    
+    // Gère la soumission du formulaire de création
+    async function handleCreateUser(event) {
+        event.preventDefault(); // Empêche la page de se recharger
+        
+        const form = event.target;
+        const formData = new FormData(form);
+        const userData = Object.fromEntries(formData.entries());
+        
+        const response = await fetch('/api/create-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert('Utilisateur créé avec succès !');
+            form.reset(); // Vide le formulaire
+            displayUsersList(); // Met à jour la liste des utilisateurs
+        } else {
+            alert(`Erreur : ${result.error}`);
+        }
     }
-
-    displayDailyDashboard();
-    displayUserDashboard();
 </script>
 
 </body>
