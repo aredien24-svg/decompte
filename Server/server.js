@@ -17,7 +17,7 @@ async function initializeDatabase() {
     try {
         await client.connect();
         console.log('Connecté à la base de données PostgreSQL (Supabase) !');
-        
+
         await client.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, firstname TEXT NOT NULL,
