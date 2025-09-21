@@ -1,10 +1,9 @@
 const express = require('express');
-const { Pool } = require('pg'); // On utilise Pool pour une meilleure gestion des connexions
+const { Pool } = require('pg');
 const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Configuration de la connexion à la base de données
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
@@ -12,29 +11,23 @@ const pool = new Pool({
     }
 });
 
-// Fonction pour vérifier la connexion et créer les tables
 async function initializeDatabase() {
     try {
         const client = await pool.connect();
-        console.log('Connecté à la base de données PostgreSQL (Supabase) !');
-
+        console.log('Connecté à la base de données PostgreSQL !');
         await client.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, firstname TEXT NOT NULL,
                 lastname TEXT NOT NULL, job TEXT, room_number TEXT
             );
         `);
-        console.log("Table 'users' prête.");
-
         await client.query(`
             CREATE TABLE IF NOT EXISTS meals (
                 id SERIAL PRIMARY KEY, user_email TEXT, date TEXT,
                 meal_type TEXT, state TEXT, UNIQUE(user_email, date, meal_type)
             );
         `);
-        console.log("Table 'meals' prête.");
-
-        client.release(); // Libère le client de connexion
+        client.release();
     } catch (err) {
         console.error('Erreur d\'initialisation de la base de données :', err.stack);
     }
@@ -46,20 +39,14 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '..')));
 
 // --- API ---
-
 app.post('/api/create-user', async (req, res) => {
     const { email, firstname, lastname, job, room_number } = req.body;
-    const query = 'INSERT INTO users (email, firstname, lastname, job, room_number) VALUES ($1, $2, $3, $4, $5) RETURNING id';
     try {
-        const result = await pool.query(query, [email, firstname, lastname, job, room_number]);
+        const result = await pool.query('INSERT INTO users (email, firstname, lastname, job, room_number) VALUES ($1, $2, $3, $4, $5) RETURNING id', [email, firstname, lastname, job, room_number]);
         res.status(201).json({ message: 'Utilisateur créé !', id: result.rows[0].id });
     } catch (err) {
-        console.error('Erreur API create-user:', err.stack);
-        if (err.code === '23505') {
-            res.status(409).json({ error: "Cet email est déjà utilisé." });
-        } else {
-            res.status(500).json({ error: 'Erreur serveur lors de la création de l\'utilisateur.' });
-        }
+        if (err.code === '23505') res.status(409).json({ error: "Cet email est déjà utilisé." });
+        else res.status(500).json({ error: 'Erreur serveur.' });
     }
 });
 
